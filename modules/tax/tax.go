@@ -4,17 +4,16 @@ import "gorm.io/gorm"
 
 type TaxAllowance struct {
 	gorm.Model
-	AllowanceType      string  `gorm:"not null" json:"allowance_type"`
-	MinAllowanceAmount float64 `gorm:"not null" json:"min_allowance_amount"`
-	MaxAllowanceAmount float64 `gorm:"not null" json:"max_allowance_amount"`
+	AllowanceType      string  `gorm:"not null"`
+	MinAllowanceAmount float64 `gorm:"not null"`
+	MaxAllowanceAmount float64 `gorm:"not null"`
 }
 
 type TaxLevel struct {
 	gorm.Model
-	TaxLevel   uint    `gorm:"not null" json:"tax_level"`
-	MinIncome  float64 `gorm:"type:decimal(10,2) not null" json:"min_income"`
-	MaxIncome  float64 `gorm:"type:decimal(10,2) not null" json:"max_income"`
-	TaxPercent float64 `gorm:"type:decimal(10,2) not null" json:"tax_percent"`
+	MinIncome  float64 `gorm:"type:decimal(10,2) not null"`
+	MaxIncome  float64 `gorm:"type:decimal(10,2) not null"`
+	TaxPercent float64 `gorm:"type:decimal(10,2) not null"`
 }
 
 type AllowanceFilter struct {

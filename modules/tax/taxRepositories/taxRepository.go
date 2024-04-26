@@ -10,6 +10,7 @@ import (
 type ITaxRepository interface {
 	FindBaselineAllowanceAmount(req *tax.AllowanceFilter) (float64, float64, error)
 	FindTaxPercentByIncome(req *tax.TaxLevelFilter) (float64, error)
+	FindMaxIncomeAndPercent() (float64, float64, error)
 }
 
 type taxRepository struct {
@@ -46,4 +47,17 @@ func (t *taxRepository) FindTaxPercentByIncome(req *tax.TaxLevelFilter) (float64
 	}
 
 	return taxLevel.TaxPercent, nil
+}
+
+func (t *taxRepository) FindMaxIncomeAndPercent() (float64, float64, error) {
+	var taxLevel tax.TaxLevel
+	if result := t.db.Order("max_income DESC").Select("max_income, tax_percent").First(&taxLevel); result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return 0, 0, fmt.Errorf("max income and max tax percent not found")
+		}
+
+		return 0, 0, fmt.Errorf("can't find max income and max tax percent")
+	}
+
+	return taxLevel.MaxIncome, taxLevel.TaxPercent, nil
 }

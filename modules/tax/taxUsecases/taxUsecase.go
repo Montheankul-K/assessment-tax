@@ -8,6 +8,7 @@ import (
 type ITaxUsecase interface {
 	FindBaselineAllowance(req *tax.AllowanceFilter) (float64, float64, error)
 	FindTaxPercent(req *tax.TaxLevelFilter) (float64, error)
+	FindMaxIncomeAndPercent() (float64, float64, error)
 }
 
 type taxUsecase struct {
@@ -36,4 +37,13 @@ func (u *taxUsecase) FindTaxPercent(req *tax.TaxLevelFilter) (float64, error) {
 	}
 
 	return taxPercent, nil
+}
+
+func (u *taxUsecase) FindMaxIncomeAndPercent() (float64, float64, error) {
+	maxIncome, taxPercent, err := u.taxRepository.FindMaxIncomeAndPercent()
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return maxIncome, taxPercent, nil
 }
