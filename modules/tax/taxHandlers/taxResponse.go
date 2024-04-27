@@ -15,6 +15,17 @@ type Error struct {
 	Message string `json:"message"`
 }
 
+type TaxResponse struct {
+	Tax      float64            `json:"tax"`
+	TaxLevel []TaxLevelResponse `json:"taxLevel"`
+	TotalTax float64            `json:"totalTax"`
+}
+
+type TaxResponseWithRefund struct {
+	TaxResponse
+	TaxRefund float64 `json:"taxRefund"`
+}
+
 func NewResponse(c echo.Context) IResponse {
 	return &Response{
 		Context: c,

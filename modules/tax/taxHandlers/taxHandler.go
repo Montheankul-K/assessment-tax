@@ -6,6 +6,7 @@ import (
 	"github.com/montheankul-k/assessment-tax/config"
 	"github.com/montheankul-k/assessment-tax/modules/tax"
 	"github.com/montheankul-k/assessment-tax/modules/tax/taxUsecases"
+	"math"
 	"net/http"
 )
 
@@ -102,6 +103,59 @@ func (h *taxHandler) decreaseAllowance(tax float64, allowances []TaxAllowanceDet
 	return result
 }
 
+func (h *taxHandler) getTaxLevel() ([]taxUsecases.EachTaxLevel, error) {
+	result, err := h.taxUsecase.GetTaxLevel()
+	if err != nil {
+		return result, fmt.Errorf("failed to get tax level")
+	}
+
+	return result, nil
+}
+
+type TaxLevelResponse struct {
+	Level string  `json:"level"`
+	Tax   float64 `json:"tax"`
+}
+
+func (h *taxHandler) setValueToTaxLevel(taxLevels []taxUsecases.EachTaxLevel, tax float64) ([]TaxLevelResponse, error) {
+	result := make([]TaxLevelResponse, 0, len(taxLevels))
+
+	for _, level := range taxLevels {
+		levelMinIncome, levelMaxIncome := level.MinMax[0], level.MinMax[1]
+		if tax >= levelMinIncome && tax <= levelMaxIncome || levelMinIncome == levelMaxIncome && tax >= levelMaxIncome {
+			result = append(result, TaxLevelResponse{
+				Level: level.Level,
+				Tax:   h.roundToOneDecimal(tax),
+			})
+		}
+
+		result = append(result, TaxLevelResponse{
+			Level: level.Level,
+			Tax:   h.roundToOneDecimal(level.Tax),
+		})
+	}
+
+	return result, nil
+}
+
+func (h *taxHandler) roundToOneDecimal(num float64) float64 {
+	return math.Round(num*10) / 10
+}
+
+func (h *taxHandler) getTaxLevelDetails(tax float64) ([]TaxLevelResponse, error) {
+	taxLevel, err := h.getTaxLevel()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tax level")
+	}
+
+	result, err := h.setValueToTaxLevel(taxLevel, tax)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get tax level")
+	}
+
+	return result, nil
+}
+
 func (h *taxHandler) CalculateTax(c echo.Context) error {
 	req, ok := c.Get("request").(*CalculateTaxRequest)
 	if !ok {
@@ -112,16 +166,38 @@ func (h *taxHandler) CalculateTax(c echo.Context) error {
 	if err != nil {
 		return NewResponse(c).ResponseError(http.StatusInternalServerError, err.Error())
 	}
+	result = math.Max(0, result)
 
 	result = h.decreaseAllowance(result, req.Allowances)
+	result = math.Max(0, result)
 
 	result, err = h.calculateTaxByTaxLevel(result)
 	if err != nil {
 		return NewResponse(c).ResponseError(http.StatusInternalServerError, err.Error())
 	}
 
-	result = h.decreaseWHT(result, req.Wht)
+	taxLevel, err := h.getTaxLevelDetails(result)
+	if err != nil {
+		return NewResponse(c).ResponseError(http.StatusInternalServerError, err.Error())
+	}
 
-	responseData := map[string]float64{"tax": result}
+	summaryTax := h.decreaseWHT(result, req.Wht)
+
+	responseData := TaxResponse{
+		Tax:      h.roundToOneDecimal(result),
+		TaxLevel: taxLevel,
+		TotalTax: h.roundToOneDecimal(summaryTax),
+	}
+
+	if summaryTax < 0 {
+		responseData.TotalTax = 0
+		responseDataWithRefund := TaxResponseWithRefund{
+			TaxResponse: responseData,
+			TaxRefund:   h.roundToOneDecimal(math.Abs(summaryTax)),
+		}
+
+		return NewResponse(c).ResponseSuccess(http.StatusOK, responseDataWithRefund)
+	}
+
 	return NewResponse(c).ResponseSuccess(http.StatusOK, responseData)
 }

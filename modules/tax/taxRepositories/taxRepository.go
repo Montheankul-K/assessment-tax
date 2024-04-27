@@ -11,6 +11,7 @@ type ITaxRepository interface {
 	FindBaselineAllowanceAmount(req *tax.AllowanceFilter) (float64, float64, error)
 	FindTaxPercentByIncome(req *tax.TaxLevelFilter) (float64, error)
 	FindMaxIncomeAndPercent() (float64, float64, error)
+	GetTaxLevel() ([]tax.TaxLevel, error)
 }
 
 type taxRepository struct {
@@ -60,4 +61,17 @@ func (t *taxRepository) FindMaxIncomeAndPercent() (float64, float64, error) {
 	}
 
 	return taxLevel.MaxIncome, taxLevel.TaxPercent, nil
+}
+
+func (t *taxRepository) GetTaxLevel() ([]tax.TaxLevel, error) {
+	var taxLevels []tax.TaxLevel
+	if result := t.db.Find(&taxLevels); result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return taxLevels, fmt.Errorf("tax level not found")
+		}
+
+		return taxLevels, fmt.Errorf("can't find tax level")
+	}
+
+	return taxLevels, nil
 }
