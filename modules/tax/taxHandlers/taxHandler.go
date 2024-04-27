@@ -89,22 +89,28 @@ func (h *taxHandler) decreasePersonalAllowance(totalIncome float64) (float64, er
 	return totalIncome - minAllowanceAmount, nil
 }
 
+func (h *taxHandler) decreaseWHT(tax, wht float64) float64 {
+	return tax - wht
+}
+
 func (h *taxHandler) CalculateTax(c echo.Context) error {
 	req, ok := c.Get("request").(*CalculateTaxRequest)
 	if !ok {
 		return NewResponse(c).ResponseError(http.StatusInternalServerError, "failed to get request from context")
 	}
 
-	incomeAfterDecrease, err := h.decreasePersonalAllowance(req.TotalIncome)
+	result, err := h.decreasePersonalAllowance(req.TotalIncome)
 	if err != nil {
 		return NewResponse(c).ResponseError(http.StatusInternalServerError, err.Error())
 	}
 
-	taxAmount, err := h.calculateTaxByTaxLevel(incomeAfterDecrease)
+	result, err = h.calculateTaxByTaxLevel(result)
 	if err != nil {
 		return NewResponse(c).ResponseError(http.StatusInternalServerError, err.Error())
 	}
 
-	responseData := map[string]float64{"tax": taxAmount}
+	result = h.decreaseWHT(result, req.Wht)
+
+	responseData := map[string]float64{"tax": result}
 	return NewResponse(c).ResponseSuccess(http.StatusOK, responseData)
 }
