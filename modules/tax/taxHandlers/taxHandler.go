@@ -93,6 +93,15 @@ func (h *taxHandler) decreaseWHT(tax, wht float64) float64 {
 	return tax - wht
 }
 
+func (h *taxHandler) decreaseAllowance(tax float64, allowances []TaxAllowanceDetails) float64 {
+	result := tax
+	for _, allowance := range allowances {
+		result -= allowance.Amount
+	}
+
+	return result
+}
+
 func (h *taxHandler) CalculateTax(c echo.Context) error {
 	req, ok := c.Get("request").(*CalculateTaxRequest)
 	if !ok {
@@ -103,6 +112,8 @@ func (h *taxHandler) CalculateTax(c echo.Context) error {
 	if err != nil {
 		return NewResponse(c).ResponseError(http.StatusInternalServerError, err.Error())
 	}
+
+	result = h.decreaseAllowance(result, req.Allowances)
 
 	result, err = h.calculateTaxByTaxLevel(result)
 	if err != nil {
