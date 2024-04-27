@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/KKGo-Software-engineering/assessment-tax/config"
-	"github.com/KKGo-Software-engineering/assessment-tax/modules/servers"
-	"github.com/KKGo-Software-engineering/assessment-tax/packages/database"
+	"github.com/montheankul-k/assessment-tax/config"
+	"github.com/montheankul-k/assessment-tax/modules/server"
+	"github.com/montheankul-k/assessment-tax/modules/tax"
+	"github.com/montheankul-k/assessment-tax/packages/database"
 	"log"
 )
 
@@ -14,5 +15,10 @@ func main() {
 	}
 
 	db := database.DBConnect(cfg.DB())
-	servers.NewServer(cfg, db).Start()
+	err = db.AutoMigrate(&tax.TaxAllowance{}, &tax.TaxLevel{})
+	if err != nil {
+		log.Fatal("Error migrate database tables: ", err)
+	}
+
+	server.NewServer(cfg, db).Start()
 }

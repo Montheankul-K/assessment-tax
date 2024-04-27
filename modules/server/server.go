@@ -1,4 +1,4 @@
-package servers
+package server
 
 import (
 	"context"
@@ -35,17 +35,6 @@ func (s *server) GetServer() *server {
 	return s
 }
 
-func (s *server) setBasicAuth() {
-	auth := s.config.AdminAuth()
-	s.app.Use(middleware.BasicAuth(func(username string, password string, c echo.Context) (bool, error) {
-		if username == auth.Username() && password == auth.Password() {
-			return true, nil
-		}
-
-		return false, nil
-	}))
-}
-
 func (s *server) setLogger() {
 	s.app.Use(middleware.Logger())
 }
@@ -54,21 +43,24 @@ func (s *server) setRecover() {
 	s.app.Use(middleware.Recover())
 }
 
-func (s *server) setMiddleware() {
+func (s *server) InitMiddleware() {
 	s.setLogger()
 	s.setRecover()
-	s.setBasicAuth()
 }
 
 func (s *server) Start() {
-	s.setMiddleware()
+	s.InitMiddleware()
+
+	modules := NewModule(s.app, s, NewMiddleware(s))
+	modules.HealthCheckModule()
+	modules.TaxModule()
 
 	port := s.config.App().Port()
-	log.Println("Server started at port: " + port)
+	log.Println("server started at port: " + port)
 
 	go func() {
 		if err := s.app.Start(":" + port); err != nil {
-			log.Println("Starting server error: ", err)
+			log.Println("starting server error: ", err)
 		}
 	}()
 
@@ -80,9 +72,10 @@ func (s *server) gracefulShutdown() {
 	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
 	<-shutdown
 
+	log.Println("shutting down the server")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	if err := s.app.Shutdown(ctx); err != nil {
-		log.Fatal("Server shutdown error: ", err)
+		log.Fatal("server shutdown error: ", err)
 	}
 }

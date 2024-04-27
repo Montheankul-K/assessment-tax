@@ -25,7 +25,7 @@ func TaxRepository(db *gorm.DB) ITaxRepository {
 
 func (t *taxRepository) FindBaselineAllowanceAmount(req *tax.AllowanceFilter) (float64, float64, error) {
 	var taxAllowance tax.TaxAllowance
-	if result := t.db.Select("min_allowance_amount", "max_allowance_amount").Where(req.AllowanceType).First(&taxAllowance); result.Error != nil {
+	if result := t.db.Select("min_allowance_amount", "max_allowance_amount").Where("allowance_type = ?", req.AllowanceType).First(&taxAllowance); result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return 0, 0, fmt.Errorf("baseline amount for %s not found", req.AllowanceType)
 		}

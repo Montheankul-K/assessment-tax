@@ -1,48 +1,48 @@
-package taxMiddlewares
+package middlewareHandlers
 
 import (
 	"errors"
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/montheankul-k/assessment-tax/config"
-	"github.com/montheankul-k/assessment-tax/modules/servers"
 	"github.com/montheankul-k/assessment-tax/modules/tax/taxHandlers"
 	"net/http"
 )
 
-type ITaxMiddleware interface {
+type IMiddlewareHandler interface {
 	ValidateCalculateTaxRequest(next echo.HandlerFunc) echo.HandlerFunc
 }
 
-type taxMiddleware struct {
+type middlewareHandler struct {
 	config     config.IConfig
 	taxHandler taxHandlers.ITaxHandler
 }
 
-func Middleware(config config.IConfig, taxHandler taxHandlers.ITaxHandler) ITaxMiddleware {
-	return &taxMiddleware{
+func MiddlewareHandler(config config.IConfig, taxHandler taxHandlers.ITaxHandler) IMiddlewareHandler {
+	return &middlewareHandler{
 		config:     config,
 		taxHandler: taxHandler,
 	}
 }
 
-func (m *taxMiddleware) ValidateCalculateTaxRequest(next echo.HandlerFunc) echo.HandlerFunc {
+func (m *middlewareHandler) ValidateCalculateTaxRequest(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var req = taxHandlers.NewCalculateTaxRequest()
 		err := c.Bind(&req)
 		if err != nil {
-			return servers.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
+			return taxHandlers.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
 		}
 
 		if err := m.validateCalculateTaxRequest(req); err != nil {
-			return servers.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
+			return taxHandlers.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
 		}
 
+		c.Set("request", req)
 		return next(c)
 	}
 }
 
-func (m *taxMiddleware) validateCalculateTaxRequest(req *taxHandlers.CalculateTaxRequest) error {
+func (m *middlewareHandler) validateCalculateTaxRequest(req *taxHandlers.CalculateTaxRequest) error {
 	if req.TotalIncome <= 0 {
 		return errors.New("total income must be gather than zero")
 	}
@@ -60,7 +60,7 @@ func (m *taxMiddleware) validateCalculateTaxRequest(req *taxHandlers.CalculateTa
 	return nil
 }
 
-func (m *taxMiddleware) validateAllowance(allowance *taxHandlers.TaxAllowanceDetails) error {
+func (m *middlewareHandler) validateAllowance(allowance *taxHandlers.TaxAllowanceDetails) error {
 	minAmount, maxAmount, err := m.findBaselineAmount(allowance.AllowanceType)
 	if err != nil {
 		return err
@@ -76,11 +76,11 @@ func (m *taxMiddleware) validateAllowance(allowance *taxHandlers.TaxAllowanceDet
 	}
 }
 
-func (m *taxMiddleware) findBaselineAmount(allowanceType string) (float64, float64, error) {
-	return m.taxHandler.FindBaselineAllowance(allowanceType)
+func (m *middlewareHandler) findBaselineAmount(allowanceType string) (float64, float64, error) {
+	return m.taxHandler.FindBaseline(allowanceType)
 }
 
-func (m *taxMiddleware) validateDonationAllowance(amount, minAmount, maxAmount float64) error {
+func (m *middlewareHandler) validateDonationAllowance(amount, minAmount, maxAmount float64) error {
 	if amount < minAmount || amount > maxAmount {
 		return errors.New("donation amount must be between 0 and 100000")
 	}
@@ -88,7 +88,7 @@ func (m *taxMiddleware) validateDonationAllowance(amount, minAmount, maxAmount f
 	return nil
 }
 
-func (m *taxMiddleware) validateKReceiptAllowance(amount, minAmount, maxAmount float64) error {
+func (m *middlewareHandler) validateKReceiptAllowance(amount, minAmount, maxAmount float64) error {
 	if amount < minAmount || amount > maxAmount {
 		return fmt.Errorf("k-receipt amount must be between 0 and %.1f", maxAmount)
 	}

@@ -4,16 +4,13 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/montheankul-k/assessment-tax/config"
-	"github.com/montheankul-k/assessment-tax/modules/servers"
 	"github.com/montheankul-k/assessment-tax/modules/tax"
 	"github.com/montheankul-k/assessment-tax/modules/tax/taxUsecases"
 	"net/http"
 )
 
-type taxHandlerErrCode string
-
 type ITaxHandler interface {
-	FindBaselineAllowance(allowanceType string) (float64, float64, error)
+	FindBaseline(allowanceType string) (float64, float64, error)
 	FindTaxPercent(totalIncome float64) (float64, error)
 	CalculateTax(c echo.Context) error
 }
@@ -30,7 +27,7 @@ func TaxHandler(config config.IConfig, taxUsecase taxUsecases.ITaxUsecase) ITaxH
 	}
 }
 
-func (h *taxHandler) FindBaselineAllowance(allowanceType string) (float64, float64, error) {
+func (h *taxHandler) FindBaseline(allowanceType string) (float64, float64, error) {
 	req := tax.AllowanceFilter{
 		AllowanceType: allowanceType,
 	}
@@ -65,7 +62,7 @@ func (h *taxHandler) findMaxIncomeAndPercent() (float64, float64, error) {
 	return maxIncome, maxPercent, nil
 }
 
-func (h *taxHandler) calculateTax(income float64) (float64, error) {
+func (h *taxHandler) calculateTaxByTaxLevel(income float64) (float64, error) {
 	maxIncome, maxPercent, err := h.findMaxIncomeAndPercent()
 	if err != nil {
 		return 0, fmt.Errorf("failed to calculate tax: %v", err)
@@ -83,12 +80,31 @@ func (h *taxHandler) calculateTax(income float64) (float64, error) {
 	return income * (taxPercent / 100), nil
 }
 
-func (h *taxHandler) CalculateTax(c echo.Context) error {
-	var req = NewCalculateTaxRequest()
-	err := c.Bind(&req)
+func (h *taxHandler) decreasePersonalAllowance(totalIncome float64) (float64, error) {
+	minAllowanceAmount, _, err := h.FindBaseline("personal")
 	if err != nil {
-		return servers.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
+		return 0, fmt.Errorf("failed to decrease personal allowance")
 	}
 
-	return nil
+	return totalIncome - minAllowanceAmount, nil
+}
+
+func (h *taxHandler) CalculateTax(c echo.Context) error {
+	req, ok := c.Get("request").(*CalculateTaxRequest)
+	if !ok {
+		return NewResponse(c).ResponseError(http.StatusInternalServerError, "failed to get request from context")
+	}
+
+	incomeAfterDecrease, err := h.decreasePersonalAllowance(req.TotalIncome)
+	if err != nil {
+		return NewResponse(c).ResponseError(http.StatusInternalServerError, err.Error())
+	}
+
+	taxAmount, err := h.calculateTaxByTaxLevel(incomeAfterDecrease)
+	if err != nil {
+		return NewResponse(c).ResponseError(http.StatusInternalServerError, err.Error())
+	}
+
+	responseData := map[string]float64{"tax": taxAmount}
+	return NewResponse(c).ResponseSuccess(http.StatusOK, responseData)
 }

@@ -20,11 +20,15 @@ type config struct {
 }
 
 type IAppConfig interface {
+	Name() string
 	Port() string
+	Version() string
 }
 
 type app struct {
-	port string
+	name    string
+	port    string
+	version string
 }
 
 type IDBConfig interface {
@@ -57,8 +61,16 @@ func (c *config) AdminAuth() IAdminAuth {
 	return c.adminAuth
 }
 
+func (a *app) Name() string {
+	return a.name
+}
+
 func (a *app) Port() string {
 	return a.port
+}
+
+func (a *app) Version() string {
+	return a.version
 }
 
 func (d *db) Url() string {
@@ -107,7 +119,9 @@ func LoadConfig(path string, useEnv bool) (IConfig, error) {
 
 	return &config{
 		app: &app{
-			port: appPort,
+			name:    "k-taxes",
+			port:    appPort,
+			version: "1.0.0",
 		},
 		db: &db{
 			url: dbUrl,
