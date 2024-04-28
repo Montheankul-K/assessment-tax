@@ -1,4 +1,4 @@
-package taxHandlers
+package taxUsecases
 
 type TaxAllowanceDetails struct {
 	AllowanceType string

@@ -1,4 +1,4 @@
-package taxHandlers
+package taxUsecases
 
 import "github.com/labstack/echo/v4"
 

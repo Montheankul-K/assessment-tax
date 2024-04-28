@@ -4,7 +4,6 @@ import (
 	"github.com/Montheankul-K/assessment-tax/config"
 	"github.com/Montheankul-K/assessment-tax/modules/admin"
 	"github.com/Montheankul-K/assessment-tax/modules/tax"
-	"github.com/Montheankul-K/assessment-tax/modules/tax/taxHandlers"
 	"github.com/Montheankul-K/assessment-tax/modules/tax/taxUsecases"
 	"github.com/labstack/echo/v4"
 	"net/http"
@@ -46,33 +45,33 @@ func (h *adminHandler) setDeduction(amount float64, allowanceType string) (float
 func (h *adminHandler) SetPersonalDeduction(c echo.Context) error {
 	req, ok := c.Get("request").(*admin.DeductionAmount)
 	if !ok {
-		return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "failed to get request from context")
+		return taxUsecases.NewResponse(c).ResponseError(http.StatusInternalServerError, "failed to get request from context")
 	}
 
 	result, err := h.setDeduction(req.Amount, "personal")
 	if err != nil {
-		return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, err.Error())
+		return taxUsecases.NewResponse(c).ResponseError(http.StatusInternalServerError, err.Error())
 	}
 
 	responseData := admin.DeductionAmount{
 		Amount: result,
 	}
-	return taxHandlers.NewResponse(c).ResponseSuccess(http.StatusOK, responseData)
+	return taxUsecases.NewResponse(c).ResponseSuccess(http.StatusOK, responseData)
 }
 
 func (h *adminHandler) SetKReceiptDeduction(c echo.Context) error {
 	req, ok := c.Get("request").(*admin.DeductionAmount)
 	if !ok {
-		return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "failed to get request from context")
+		return taxUsecases.NewResponse(c).ResponseError(http.StatusInternalServerError, "failed to get request from context")
 	}
 
 	result, err := h.setDeduction(req.Amount, "k-receipt")
 	if err != nil {
-		return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, err.Error())
+		return taxUsecases.NewResponse(c).ResponseError(http.StatusInternalServerError, err.Error())
 	}
 
 	responseData := admin.DeductionAmount{
 		Amount: result,
 	}
-	return taxHandlers.NewResponse(c).ResponseSuccess(http.StatusOK, responseData)
+	return taxUsecases.NewResponse(c).ResponseSuccess(http.StatusOK, responseData)
 }

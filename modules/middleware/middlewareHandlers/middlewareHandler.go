@@ -7,7 +7,6 @@ import (
 	"github.com/Montheankul-K/assessment-tax/config"
 	"github.com/Montheankul-K/assessment-tax/modules/admin"
 	"github.com/Montheankul-K/assessment-tax/modules/tax"
-	"github.com/Montheankul-K/assessment-tax/modules/tax/taxHandlers"
 	"github.com/Montheankul-K/assessment-tax/modules/tax/taxUsecases"
 	"github.com/labstack/echo/v4"
 	"io"
@@ -38,14 +37,14 @@ func MiddlewareHandler(config config.IConfig, taxUsecase taxUsecases.ITaxUsecase
 
 func (m *middlewareHandler) ValidateCalculateTaxRequest(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var req = taxHandlers.NewCalculateTaxRequest()
+		var req = taxUsecases.NewCalculateTaxRequest()
 		err := c.Bind(&req)
 		if err != nil {
-			return taxHandlers.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
+			return taxUsecases.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
 		}
 
 		if err := m.validateCalculateTaxRequest(req); err != nil {
-			return taxHandlers.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
+			return taxUsecases.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
 		}
 
 		c.Set("request", req)
@@ -53,7 +52,7 @@ func (m *middlewareHandler) ValidateCalculateTaxRequest(next echo.HandlerFunc) e
 	}
 }
 
-func (m *middlewareHandler) validateCalculateTaxRequest(req *taxHandlers.CalculateTaxRequest) error {
+func (m *middlewareHandler) validateCalculateTaxRequest(req *taxUsecases.CalculateTaxRequest) error {
 	if req.TotalIncome <= 0 {
 		return errors.New("total income must be gather than zero")
 	}
@@ -71,7 +70,7 @@ func (m *middlewareHandler) validateCalculateTaxRequest(req *taxHandlers.Calcula
 	return nil
 }
 
-func (m *middlewareHandler) validateAllowance(allowance *taxHandlers.TaxAllowanceDetails) error {
+func (m *middlewareHandler) validateAllowance(allowance *taxUsecases.TaxAllowanceDetails) error {
 	minAmount, maxAmount, err := m.findBaselineAmount(allowance.AllowanceType)
 	if err != nil {
 		return err
@@ -113,11 +112,11 @@ func (m *middlewareHandler) ValidateSetDeductionRequest(next echo.HandlerFunc) e
 		var req *admin.DeductionAmount
 		err := c.Bind(&req)
 		if err != nil {
-			return taxHandlers.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
+			return taxUsecases.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
 		}
 
 		if req.Amount > 100000 {
-			return taxHandlers.NewResponse(c).ResponseError(http.StatusBadRequest, "req shouldn't be gather than 100000")
+			return taxUsecases.NewResponse(c).ResponseError(http.StatusBadRequest, "req shouldn't be gather than 100000")
 		}
 
 		c.Set("request", req)
@@ -129,12 +128,12 @@ func (m *middlewareHandler) GetDataFromTaxCSV(next echo.HandlerFunc) echo.Handle
 	return func(c echo.Context) error {
 		file, err := c.FormFile("taxes")
 		if err != nil {
-			return taxHandlers.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
+			return taxUsecases.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
 		}
 
 		src, err := file.Open()
 		if err != nil {
-			return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not open file")
+			return taxUsecases.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not open file")
 		}
 		defer func(src multipart.File) {
 			err := src.Close()
@@ -147,9 +146,9 @@ func (m *middlewareHandler) GetDataFromTaxCSV(next echo.HandlerFunc) echo.Handle
 
 		if _, err := reader.Read(); err != nil {
 			if err == io.EOF {
-				return taxHandlers.NewResponse(c).ResponseError(http.StatusBadRequest, "empty file")
+				return taxUsecases.NewResponse(c).ResponseError(http.StatusBadRequest, "empty file")
 			}
-			return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not read file")
+			return taxUsecases.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not read file")
 		}
 
 		for {
@@ -158,22 +157,22 @@ func (m *middlewareHandler) GetDataFromTaxCSV(next echo.HandlerFunc) echo.Handle
 				break
 			}
 			if err != nil {
-				return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not read file")
+				return taxUsecases.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not read file")
 			}
 
 			totalIncome, err := strconv.ParseFloat(record[0], 64)
 			if err != nil {
-				return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not parse total income")
+				return taxUsecases.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not parse total income")
 			}
 
 			wht, err := strconv.ParseFloat(record[1], 64)
 			if err != nil {
-				return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not parse total wht")
+				return taxUsecases.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not parse total wht")
 			}
 
 			donation, err := strconv.ParseFloat(record[2], 64)
 			if err != nil {
-				return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not parse donation")
+				return taxUsecases.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not parse donation")
 			}
 
 			req = append(req, tax.TaxFromCSV{
@@ -192,15 +191,15 @@ func (m *middlewareHandler) ChangeStructFormat(next echo.HandlerFunc) echo.Handl
 	return func(c echo.Context) error {
 		req, ok := c.Get("request").([]tax.TaxFromCSV)
 		if !ok {
-			return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "failed to get request from context")
+			return taxUsecases.NewResponse(c).ResponseError(http.StatusInternalServerError, "failed to get request from context")
 		}
 
-		var result []taxHandlers.CalculateTaxRequest
+		var result []taxUsecases.CalculateTaxRequest
 		for _, taxData := range req {
-			calculateTaxRequest := taxHandlers.CalculateTaxRequest{
+			calculateTaxRequest := taxUsecases.CalculateTaxRequest{
 				TotalIncome: taxData.TotalIncome,
 				Wht:         taxData.Wht,
-				Allowances: []taxHandlers.TaxAllowanceDetails{
+				Allowances: []taxUsecases.TaxAllowanceDetails{
 					{AllowanceType: "donation", Amount: taxData.Donation},
 				},
 			}
@@ -215,14 +214,14 @@ func (m *middlewareHandler) ChangeStructFormat(next echo.HandlerFunc) echo.Handl
 
 func (m *middlewareHandler) ValidateTaxFromCSV(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		req, ok := c.Get("request").([]taxHandlers.CalculateTaxRequest)
+		req, ok := c.Get("request").([]taxUsecases.CalculateTaxRequest)
 		if !ok {
-			return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "failed to get request from context")
+			return taxUsecases.NewResponse(c).ResponseError(http.StatusInternalServerError, "failed to get request from context")
 		}
 
 		for _, taxData := range req {
 			if err := m.validateCalculateTaxRequest(&taxData); err != nil {
-				return taxHandlers.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
+				return taxUsecases.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
 			}
 		}
 
