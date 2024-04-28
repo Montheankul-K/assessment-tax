@@ -54,6 +54,7 @@ func (s *server) Start() {
 	modules := NewModule(s.app, s, NewMiddleware(s))
 	modules.HealthCheckModule()
 	modules.TaxModule()
+	modules.AdminModule()
 
 	port := s.config.App().Port()
 	log.Println("server started at port: " + port)

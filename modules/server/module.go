@@ -3,6 +3,7 @@ package server
 import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/montheankul-k/assessment-tax/modules/admin/adminHandlers"
 	"github.com/montheankul-k/assessment-tax/modules/middleware/middlewareHandlers"
 	"github.com/montheankul-k/assessment-tax/modules/monitor/monitorHandlers"
 	"github.com/montheankul-k/assessment-tax/modules/tax/taxHandlers"
@@ -13,6 +14,7 @@ import (
 type IModule interface {
 	TaxModule()
 	HealthCheckModule()
+	AdminModule()
 }
 
 type moduleFactory struct {
@@ -69,9 +71,9 @@ func (m *moduleFactory) AdminModule() {
 
 	repository := taxRepositories.TaxRepository(m.server.db)
 	usecase := taxUsecases.TaxUsecase(repository)
-	handler := taxHandlers.TaxHandler(m.server.config, usecase)
+	handler := adminHandlers.AdminHandler(m.server.config, usecase)
 
 	router := m.router.Group("/admin", m.basicAuthMiddleware(auth.Username(), auth.Password()))
-	router.POST("/deductions/personal", handler.CalculateTax)
-	router.POST("/deductions/k-receipt", handler.CalculateTax)
+	router.POST("/deductions/personal", m.middleware.ValidateSetDeductionRequest(handler.SetPersonalDeduction))
+	router.POST("/deductions/k-receipt", m.middleware.ValidateSetDeductionRequest(handler.SetKReceiptDeduction))
 }

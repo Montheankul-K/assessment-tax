@@ -24,6 +24,11 @@ type TaxLevelFilter struct {
 	Income float64
 }
 
+type SetNewDeductionAmount struct {
+	AllowanceFilter
+	NewDeductionAmount float64
+}
+
 func (TaxAllowance) TableName() string {
 	return "tax_allowance"
 }

@@ -11,6 +11,7 @@ type ITaxUsecase interface {
 	FindTaxPercent(req *tax.TaxLevelFilter) (float64, error)
 	FindMaxIncomeAndPercent() (float64, float64, error)
 	GetTaxLevel() ([]EachTaxLevel, error)
+	SetDeduction(req *tax.SetNewDeductionAmount) (float64, error)
 }
 
 type taxUsecase struct {
@@ -84,4 +85,13 @@ func (u *taxUsecase) GetTaxLevel() ([]EachTaxLevel, error) {
 	}
 
 	return newTaxLevel, nil
+}
+
+func (u *taxUsecase) SetDeduction(req *tax.SetNewDeductionAmount) (float64, error) {
+	result, err := u.taxRepository.SetDeduction(req)
+	if err != nil {
+		return 0, err
+	}
+
+	return result, nil
 }

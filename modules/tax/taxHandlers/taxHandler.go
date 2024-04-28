@@ -82,12 +82,12 @@ func (h *taxHandler) calculateTaxByTaxLevel(income float64) (float64, error) {
 }
 
 func (h *taxHandler) decreasePersonalAllowance(totalIncome float64) (float64, error) {
-	minAllowanceAmount, _, err := h.FindBaseline("personal")
+	_, maxAllowanceAmount, err := h.FindBaseline("personal")
 	if err != nil {
 		return 0, fmt.Errorf("failed to decrease personal allowance")
 	}
 
-	return totalIncome - minAllowanceAmount, nil
+	return totalIncome - maxAllowanceAmount, nil
 }
 
 func (h *taxHandler) decreaseWHT(tax, wht float64) float64 {

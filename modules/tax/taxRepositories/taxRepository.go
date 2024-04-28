@@ -12,6 +12,7 @@ type ITaxRepository interface {
 	FindTaxPercentByIncome(req *tax.TaxLevelFilter) (float64, error)
 	FindMaxIncomeAndPercent() (float64, float64, error)
 	GetTaxLevel() ([]tax.TaxLevel, error)
+	SetDeduction(req *tax.SetNewDeductionAmount) (float64, error)
 }
 
 type taxRepository struct {
@@ -74,4 +75,35 @@ func (t *taxRepository) GetTaxLevel() ([]tax.TaxLevel, error) {
 	}
 
 	return taxLevels, nil
+}
+
+func (t *taxRepository) SetDeduction(req *tax.SetNewDeductionAmount) (float64, error) {
+	txn := t.db.Begin()
+	if txn.Error != nil {
+		return 0, fmt.Errorf("can't begin transaction")
+	}
+
+	var taxAllowance tax.TaxAllowance
+	if result := t.db.Where("allowance_type = ?", req.AllowanceType).First(&taxAllowance); result.Error != nil {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			txn.Rollback()
+			return 0, fmt.Errorf("can't find tax allowance")
+		}
+
+		txn.Rollback()
+		return 0, fmt.Errorf("can't find tax allowance")
+	}
+
+	taxAllowance.MaxAllowanceAmount = req.NewDeductionAmount
+	if err := txn.Save(&taxAllowance).Error; err != nil {
+		txn.Rollback()
+		return 0, fmt.Errorf("can't update tax allowance")
+	}
+
+	if err := txn.Commit().Error; err != nil {
+		txn.Rollback()
+		return 0, fmt.Errorf("can't commit transaction")
+	}
+
+	return taxAllowance.MaxAllowanceAmount, nil
 }

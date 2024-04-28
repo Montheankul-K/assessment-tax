@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/montheankul-k/assessment-tax/config"
+	"github.com/montheankul-k/assessment-tax/modules/admin"
 	"github.com/montheankul-k/assessment-tax/modules/tax/taxHandlers"
 	"net/http"
 )
 
 type IMiddlewareHandler interface {
 	ValidateCalculateTaxRequest(next echo.HandlerFunc) echo.HandlerFunc
+	ValidateSetDeductionRequest(next echo.HandlerFunc) echo.HandlerFunc
 }
 
 type middlewareHandler struct {
@@ -94,4 +96,21 @@ func (m *middlewareHandler) validateKReceiptAllowance(amount, minAmount, maxAmou
 	}
 
 	return nil
+}
+
+func (m *middlewareHandler) ValidateSetDeductionRequest(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var req *admin.DeductionAmount
+		err := c.Bind(&req)
+		if err != nil {
+			return taxHandlers.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
+		}
+
+		if req.Amount > 100000 {
+			return taxHandlers.NewResponse(c).ResponseError(http.StatusBadRequest, "req shouldn't be gather than 100000")
+		}
+
+		c.Set("request", req)
+		return next(c)
+	}
 }
