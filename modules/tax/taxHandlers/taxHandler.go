@@ -14,6 +14,7 @@ type ITaxHandler interface {
 	FindBaseline(allowanceType string) (float64, float64, error)
 	FindTaxPercent(totalIncome float64) (float64, error)
 	CalculateTax(c echo.Context) error
+	CalculateTaxFromCSV(c echo.Context) error
 }
 
 type taxHandler struct {
@@ -156,15 +157,10 @@ func (h *taxHandler) getTaxLevelDetails(tax float64) ([]TaxLevelResponse, error)
 	return result, nil
 }
 
-func (h *taxHandler) CalculateTax(c echo.Context) error {
-	req, ok := c.Get("request").(*CalculateTaxRequest)
-	if !ok {
-		return NewResponse(c).ResponseError(http.StatusInternalServerError, "failed to get request from context")
-	}
-
+func (h *taxHandler) calculateTaxWithoutWHT(req *CalculateTaxRequest) (float64, error) {
 	result, err := h.decreasePersonalAllowance(req.TotalIncome)
 	if err != nil {
-		return NewResponse(c).ResponseError(http.StatusInternalServerError, err.Error())
+		return 0, err
 	}
 	result = math.Max(0, result)
 
@@ -172,6 +168,20 @@ func (h *taxHandler) CalculateTax(c echo.Context) error {
 	result = math.Max(0, result)
 
 	result, err = h.calculateTaxByTaxLevel(result)
+	if err != nil {
+		return 0, err
+	}
+
+	return result, nil
+}
+
+func (h *taxHandler) CalculateTax(c echo.Context) error {
+	req, ok := c.Get("request").(*CalculateTaxRequest)
+	if !ok {
+		return NewResponse(c).ResponseError(http.StatusInternalServerError, "failed to get request from context")
+	}
+
+	result, err := h.calculateTaxWithoutWHT(req)
 	if err != nil {
 		return NewResponse(c).ResponseError(http.StatusInternalServerError, err.Error())
 	}
@@ -197,6 +207,41 @@ func (h *taxHandler) CalculateTax(c echo.Context) error {
 		}
 
 		return NewResponse(c).ResponseSuccess(http.StatusOK, responseDataWithRefund)
+	}
+
+	return NewResponse(c).ResponseSuccess(http.StatusOK, responseData)
+}
+
+func (h *taxHandler) CalculateTaxFromCSV(c echo.Context) error {
+	req, ok := c.Get("request").([]CalculateTaxRequest)
+	if !ok {
+		return NewResponse(c).ResponseError(http.StatusInternalServerError, "failed to get request from context")
+	}
+
+	var responseData []interface{}
+	for _, taxData := range req {
+		result, err := h.calculateTaxWithoutWHT(&taxData)
+		if err != nil {
+			return NewResponse(c).ResponseError(http.StatusInternalServerError, err.Error())
+		}
+
+		result = h.decreaseWHT(result, taxData.Wht)
+		if result < 0 {
+			taxResponse := TaxCSVResponseWithRefund{
+				TotalIncome: h.roundToOneDecimal(taxData.TotalIncome),
+				Tax:         0,
+				TaxRefund:   h.roundToOneDecimal(math.Abs(result)),
+			}
+
+			responseData = append(responseData, taxResponse)
+		}
+
+		taxResponse := TaxCSVResponse{
+			TotalIncome: h.roundToOneDecimal(taxData.TotalIncome),
+			Tax:         result,
+		}
+
+		responseData = append(responseData, taxResponse)
 	}
 
 	return NewResponse(c).ResponseSuccess(http.StatusOK, responseData)

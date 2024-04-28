@@ -1,18 +1,26 @@
 package middlewareHandlers
 
 import (
+	"encoding/csv"
 	"errors"
 	"fmt"
 	"github.com/labstack/echo/v4"
 	"github.com/montheankul-k/assessment-tax/config"
 	"github.com/montheankul-k/assessment-tax/modules/admin"
+	"github.com/montheankul-k/assessment-tax/modules/tax"
 	"github.com/montheankul-k/assessment-tax/modules/tax/taxHandlers"
+	"io"
+	"mime/multipart"
 	"net/http"
+	"strconv"
 )
 
 type IMiddlewareHandler interface {
 	ValidateCalculateTaxRequest(next echo.HandlerFunc) echo.HandlerFunc
 	ValidateSetDeductionRequest(next echo.HandlerFunc) echo.HandlerFunc
+	GetDataFromTaxCSV(next echo.HandlerFunc) echo.HandlerFunc
+	ChangeStructFormat(next echo.HandlerFunc) echo.HandlerFunc
+	ValidateTaxFromCSV(next echo.HandlerFunc) echo.HandlerFunc
 }
 
 type middlewareHandler struct {
@@ -108,6 +116,112 @@ func (m *middlewareHandler) ValidateSetDeductionRequest(next echo.HandlerFunc) e
 
 		if req.Amount > 100000 {
 			return taxHandlers.NewResponse(c).ResponseError(http.StatusBadRequest, "req shouldn't be gather than 100000")
+		}
+
+		c.Set("request", req)
+		return next(c)
+	}
+}
+
+func (m *middlewareHandler) GetDataFromTaxCSV(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		file, err := c.FormFile("taxes")
+		if err != nil {
+			return taxHandlers.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
+		}
+
+		src, err := file.Open()
+		if err != nil {
+			return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not open file")
+		}
+		defer func(src multipart.File) {
+			err := src.Close()
+			if err != nil {
+			}
+		}(src)
+
+		reader := csv.NewReader(src)
+		var req []tax.TaxFromCSV
+
+		if _, err := reader.Read(); err != nil {
+			if err == io.EOF {
+				return taxHandlers.NewResponse(c).ResponseError(http.StatusBadRequest, "empty file")
+			}
+			return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not read file")
+		}
+
+		for {
+			record, err := reader.Read()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not read file")
+			}
+
+			totalIncome, err := strconv.ParseFloat(record[0], 64)
+			if err != nil {
+				return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not parse total income")
+			}
+
+			wht, err := strconv.ParseFloat(record[1], 64)
+			if err != nil {
+				return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not parse total wht")
+			}
+
+			donation, err := strconv.ParseFloat(record[2], 64)
+			if err != nil {
+				return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "could not parse donation")
+			}
+
+			req = append(req, tax.TaxFromCSV{
+				TotalIncome: totalIncome,
+				Wht:         wht,
+				Donation:    donation,
+			})
+		}
+
+		c.Set("request", req)
+		return next(c)
+	}
+}
+
+func (m *middlewareHandler) ChangeStructFormat(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		req, ok := c.Get("request").([]tax.TaxFromCSV)
+		if !ok {
+			return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "failed to get request from context")
+		}
+
+		var result []taxHandlers.CalculateTaxRequest
+		for _, taxData := range req {
+			calculateTaxRequest := taxHandlers.CalculateTaxRequest{
+				TotalIncome: taxData.TotalIncome,
+				Wht:         taxData.Wht,
+				Allowances: []taxHandlers.TaxAllowanceDetails{
+					{AllowanceType: "donation", Amount: taxData.Donation},
+				},
+			}
+
+			result = append(result, calculateTaxRequest)
+		}
+
+		c.Set("request", result)
+		return next(c)
+	}
+}
+
+func (m *middlewareHandler) ValidateTaxFromCSV(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		req, ok := c.Get("request").([]taxHandlers.CalculateTaxRequest)
+		if !ok {
+			return taxHandlers.NewResponse(c).ResponseError(http.StatusInternalServerError, "failed to get request from context")
+		}
+
+		for _, taxData := range req {
+			if err := m.validateCalculateTaxRequest(&taxData); err != nil {
+				return taxHandlers.NewResponse(c).ResponseError(http.StatusBadRequest, err.Error())
+			}
 		}
 
 		c.Set("request", req)

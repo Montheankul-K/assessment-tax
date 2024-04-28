@@ -26,6 +26,17 @@ type TaxResponseWithRefund struct {
 	TaxRefund float64 `json:"taxRefund"`
 }
 
+type TaxCSVResponse struct {
+	TotalIncome float64 `json:"totalIncome"`
+	Tax         float64 `json:"tax"`
+}
+
+type TaxCSVResponseWithRefund struct {
+	TotalIncome float64 `json:"totalIncome"`
+	Tax         float64 `json:"tax"`
+	TaxRefund   float64 `json:"taxRefund"`
+}
+
 func NewResponse(c echo.Context) IResponse {
 	return &Response{
 		Context: c,

@@ -16,6 +16,12 @@ type TaxLevel struct {
 	TaxPercent float64 `gorm:"type:decimal(10,2) not null"`
 }
 
+type TaxFromCSV struct {
+	TotalIncome float64
+	Wht         float64
+	Donation    float64
+}
+
 type AllowanceFilter struct {
 	AllowanceType string
 }

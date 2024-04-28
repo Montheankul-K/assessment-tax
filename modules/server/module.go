@@ -63,7 +63,7 @@ func (m *moduleFactory) TaxModule() {
 
 	router := m.router.Group("/tax")
 	router.POST("/calculations", m.middleware.ValidateCalculateTaxRequest(handler.CalculateTax))
-	router.POST("/calculations/upload-csv", handler.CalculateTax)
+	router.POST("/calculations/upload-csv", handler.CalculateTaxFromCSV, m.middleware.GetDataFromTaxCSV, m.middleware.ChangeStructFormat, m.middleware.ValidateTaxFromCSV)
 }
 
 func (m *moduleFactory) AdminModule() {
