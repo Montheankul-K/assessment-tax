@@ -3,7 +3,7 @@ package taxRepositories
 import (
 	"errors"
 	"fmt"
-	"github.com/montheankul-k/assessment-tax/modules/tax"
+	"github.com/Montheankul-K/assessment-tax/modules/tax"
 	"gorm.io/gorm"
 )
 

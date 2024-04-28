@@ -1,9 +1,9 @@
 package middlewareHandlers
 
 import (
+	"github.com/Montheankul-K/assessment-tax/modules/tax"
+	"github.com/Montheankul-K/assessment-tax/modules/tax/taxHandlers"
 	"github.com/labstack/echo/v4"
-	"github.com/montheankul-k/assessment-tax/modules/tax"
-	"github.com/montheankul-k/assessment-tax/modules/tax/taxHandlers"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"

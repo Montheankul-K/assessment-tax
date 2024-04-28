@@ -1,14 +1,14 @@
 package server
 
 import (
+	"github.com/Montheankul-K/assessment-tax/modules/admin/adminHandlers"
+	"github.com/Montheankul-K/assessment-tax/modules/middleware/middlewareHandlers"
+	"github.com/Montheankul-K/assessment-tax/modules/monitor/monitorHandlers"
+	"github.com/Montheankul-K/assessment-tax/modules/tax/taxHandlers"
+	"github.com/Montheankul-K/assessment-tax/modules/tax/taxRepositories"
+	"github.com/Montheankul-K/assessment-tax/modules/tax/taxUsecases"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/montheankul-k/assessment-tax/modules/admin/adminHandlers"
-	"github.com/montheankul-k/assessment-tax/modules/middleware/middlewareHandlers"
-	"github.com/montheankul-k/assessment-tax/modules/monitor/monitorHandlers"
-	"github.com/montheankul-k/assessment-tax/modules/tax/taxHandlers"
-	"github.com/montheankul-k/assessment-tax/modules/tax/taxRepositories"
-	"github.com/montheankul-k/assessment-tax/modules/tax/taxUsecases"
 )
 
 type IModule interface {

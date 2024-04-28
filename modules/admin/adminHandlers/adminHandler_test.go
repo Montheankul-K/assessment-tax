@@ -1,11 +1,11 @@
 package adminHandlers
 
 import (
+	"github.com/Montheankul-K/assessment-tax/config"
+	"github.com/Montheankul-K/assessment-tax/modules/admin"
+	"github.com/Montheankul-K/assessment-tax/modules/tax"
+	"github.com/Montheankul-K/assessment-tax/modules/tax/taxUsecases"
 	"github.com/labstack/echo/v4"
-	"github.com/montheankul-k/assessment-tax/config"
-	"github.com/montheankul-k/assessment-tax/modules/admin"
-	"github.com/montheankul-k/assessment-tax/modules/tax"
-	"github.com/montheankul-k/assessment-tax/modules/tax/taxUsecases"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"net/http"

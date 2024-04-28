@@ -1,7 +1,7 @@
 package taxUsecases
 
 import (
-	"github.com/montheankul-k/assessment-tax/modules/tax"
+	"github.com/Montheankul-K/assessment-tax/modules/tax"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

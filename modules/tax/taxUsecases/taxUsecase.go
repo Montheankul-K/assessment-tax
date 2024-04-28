@@ -2,8 +2,8 @@ package taxUsecases
 
 import (
 	"fmt"
-	"github.com/montheankul-k/assessment-tax/modules/tax"
-	"github.com/montheankul-k/assessment-tax/modules/tax/taxRepositories"
+	"github.com/Montheankul-K/assessment-tax/modules/tax"
+	"github.com/Montheankul-K/assessment-tax/modules/tax/taxRepositories"
 )
 
 type ITaxUsecase interface {

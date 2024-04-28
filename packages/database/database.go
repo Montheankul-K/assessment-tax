@@ -1,7 +1,7 @@
 package database
 
 import (
-	"github.com/montheankul-k/assessment-tax/config"
+	"github.com/Montheankul-K/assessment-tax/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/montheankul-k/assessment-tax/config"
-	"github.com/montheankul-k/assessment-tax/modules/server"
-	"github.com/montheankul-k/assessment-tax/modules/tax"
-	"github.com/montheankul-k/assessment-tax/packages/database"
+	"github.com/Montheankul-K/assessment-tax/config"
+	"github.com/Montheankul-K/assessment-tax/modules/server"
+	"github.com/Montheankul-K/assessment-tax/modules/tax"
+	"github.com/Montheankul-K/assessment-tax/packages/database"
 	"log"
 )
 

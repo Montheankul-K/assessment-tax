@@ -1,9 +1,9 @@
 package monitorHandlers
 
 import (
+	"github.com/Montheankul-K/assessment-tax/config"
+	"github.com/Montheankul-K/assessment-tax/modules/monitor"
 	"github.com/labstack/echo/v4"
-	"github.com/montheankul-k/assessment-tax/config"
-	"github.com/montheankul-k/assessment-tax/modules/monitor"
 	"net/http"
 )
 
