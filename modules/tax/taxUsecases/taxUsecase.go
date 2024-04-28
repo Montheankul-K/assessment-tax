@@ -7,8 +7,8 @@ import (
 )
 
 type ITaxUsecase interface {
-	FindBaselineAllowance(req *tax.AllowanceFilter) (float64, float64, error)
-	FindTaxPercent(req *tax.TaxLevelFilter) (float64, error)
+	FindBaseline(allowanceType string) (float64, float64, error)
+	FindTaxPercent(totalIncome float64) (float64, error)
 	FindMaxIncomeAndPercent() (float64, float64, error)
 	GetTaxLevel() ([]EachTaxLevel, error)
 	SetDeduction(req *tax.SetNewDeductionAmount) (float64, error)
@@ -24,19 +24,27 @@ func TaxUsecase(taxRepository taxRepositories.ITaxRepository) ITaxUsecase {
 	}
 }
 
-func (u *taxUsecase) FindBaselineAllowance(req *tax.AllowanceFilter) (float64, float64, error) {
-	minAllowanceAmount, maxAllowanceAmount, err := u.taxRepository.FindBaselineAllowanceAmount(req)
+func (u *taxUsecase) FindBaseline(allowanceType string) (float64, float64, error) {
+	req := tax.AllowanceFilter{
+		AllowanceType: allowanceType,
+	}
+
+	minAllowanceAmount, maxAllowanceAmount, err := u.taxRepository.FindBaselineAllowanceAmount(&req)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, fmt.Errorf("failed to find baseline allowance: %v", err)
 	}
 
 	return minAllowanceAmount, maxAllowanceAmount, nil
 }
 
-func (u *taxUsecase) FindTaxPercent(req *tax.TaxLevelFilter) (float64, error) {
-	taxPercent, err := u.taxRepository.FindTaxPercentByIncome(req)
+func (u *taxUsecase) FindTaxPercent(totalIncome float64) (float64, error) {
+	req := tax.TaxLevelFilter{
+		Income: totalIncome,
+	}
+
+	taxPercent, err := u.taxRepository.FindTaxPercentByIncome(&req)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("failed to find tax percent: %v", err)
 	}
 
 	return taxPercent, nil

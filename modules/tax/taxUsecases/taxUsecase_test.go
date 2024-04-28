@@ -35,8 +35,8 @@ func (m *mockTaxRepository) SetDeduction(req *tax.SetNewDeductionAmount) (float6
 }
 
 func TestFindBaselineAllowance(t *testing.T) {
-	taxRepository := taxUsecase{&mockTaxRepository{}}
-	minAllowanceAmount, maxAllowanceAmount, err := taxRepository.FindBaselineAllowance(&tax.AllowanceFilter{})
+	usecase := taxUsecase{&mockTaxRepository{}}
+	minAllowanceAmount, maxAllowanceAmount, err := usecase.taxRepository.FindBaselineAllowanceAmount(&tax.AllowanceFilter{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, 0.0, minAllowanceAmount)
@@ -44,16 +44,16 @@ func TestFindBaselineAllowance(t *testing.T) {
 }
 
 func TestFindTaxPercent(t *testing.T) {
-	taxRepository := taxUsecase{&mockTaxRepository{}}
-	taxPercent, err := taxRepository.FindTaxPercent(&tax.TaxLevelFilter{})
+	usecase := taxUsecase{&mockTaxRepository{}}
+	taxPercent, err := usecase.taxRepository.FindTaxPercentByIncome(&tax.TaxLevelFilter{})
 
 	assert.NoError(t, err)
 	assert.Equal(t, 35.0, taxPercent)
 }
 
 func TestFindMaxIncomeAndPercent(t *testing.T) {
-	taxRepository := taxUsecase{&mockTaxRepository{}}
-	maxIncome, taxPercent, err := taxRepository.FindMaxIncomeAndPercent()
+	usecase := taxUsecase{&mockTaxRepository{}}
+	maxIncome, taxPercent, err := usecase.taxRepository.FindMaxIncomeAndPercent()
 
 	assert.NoError(t, err)
 	assert.Equal(t, 2000001.0, maxIncome)

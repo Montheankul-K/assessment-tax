@@ -3,7 +3,6 @@ package taxHandlers
 import (
 	"fmt"
 	"github.com/Montheankul-K/assessment-tax/config"
-	"github.com/Montheankul-K/assessment-tax/modules/tax"
 	"github.com/Montheankul-K/assessment-tax/modules/tax/taxUsecases"
 	"github.com/labstack/echo/v4"
 	"math"
@@ -11,8 +10,6 @@ import (
 )
 
 type ITaxHandler interface {
-	FindBaseline(allowanceType string) (float64, float64, error)
-	FindTaxPercent(totalIncome float64) (float64, error)
 	CalculateTax(c echo.Context) error
 	CalculateTaxFromCSV(c echo.Context) error
 }
@@ -27,32 +24,6 @@ func TaxHandler(config config.IConfig, taxUsecase taxUsecases.ITaxUsecase) ITaxH
 		config:     config,
 		taxUsecase: taxUsecase,
 	}
-}
-
-func (h *taxHandler) FindBaseline(allowanceType string) (float64, float64, error) {
-	req := tax.AllowanceFilter{
-		AllowanceType: allowanceType,
-	}
-
-	minAllowanceAmount, maxAllowanceAmount, err := h.taxUsecase.FindBaselineAllowance(&req)
-	if err != nil {
-		return 0, 0, fmt.Errorf("failed to find baseline allowance: %v", err)
-	}
-
-	return minAllowanceAmount, maxAllowanceAmount, nil
-}
-
-func (h *taxHandler) FindTaxPercent(totalIncome float64) (float64, error) {
-	req := tax.TaxLevelFilter{
-		Income: totalIncome,
-	}
-
-	taxPercent, err := h.taxUsecase.FindTaxPercent(&req)
-	if err != nil {
-		return 0, fmt.Errorf("failed to find tax percent: %v", err)
-	}
-
-	return taxPercent, nil
 }
 
 func (h *taxHandler) findMaxIncomeAndPercent() (float64, float64, error) {
@@ -74,7 +45,7 @@ func (h *taxHandler) calculateTaxByTaxLevel(income float64) (float64, error) {
 		return income * (maxPercent / 100), nil
 	}
 
-	taxPercent, err := h.FindTaxPercent(income)
+	taxPercent, err := h.taxUsecase.FindTaxPercent(income)
 	if err != nil {
 		return 0, fmt.Errorf("failed to calculate tax: %v", err)
 	}
@@ -83,7 +54,7 @@ func (h *taxHandler) calculateTaxByTaxLevel(income float64) (float64, error) {
 }
 
 func (h *taxHandler) decreasePersonalAllowance(totalIncome float64) (float64, error) {
-	_, maxAllowanceAmount, err := h.FindBaseline("personal")
+	_, maxAllowanceAmount, err := h.taxUsecase.FindBaseline("personal")
 	if err != nil {
 		return 0, fmt.Errorf("failed to decrease personal allowance")
 	}

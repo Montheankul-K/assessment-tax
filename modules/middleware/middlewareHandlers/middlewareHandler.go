@@ -8,6 +8,7 @@ import (
 	"github.com/Montheankul-K/assessment-tax/modules/admin"
 	"github.com/Montheankul-K/assessment-tax/modules/tax"
 	"github.com/Montheankul-K/assessment-tax/modules/tax/taxHandlers"
+	"github.com/Montheankul-K/assessment-tax/modules/tax/taxUsecases"
 	"github.com/labstack/echo/v4"
 	"io"
 	"mime/multipart"
@@ -25,13 +26,13 @@ type IMiddlewareHandler interface {
 
 type middlewareHandler struct {
 	config     config.IConfig
-	taxHandler taxHandlers.ITaxHandler
+	taxUsecase taxUsecases.ITaxUsecase
 }
 
-func MiddlewareHandler(config config.IConfig, taxHandler taxHandlers.ITaxHandler) IMiddlewareHandler {
+func MiddlewareHandler(config config.IConfig, taxUsecase taxUsecases.ITaxUsecase) IMiddlewareHandler {
 	return &middlewareHandler{
 		config:     config,
-		taxHandler: taxHandler,
+		taxUsecase: taxUsecase,
 	}
 }
 
@@ -87,7 +88,8 @@ func (m *middlewareHandler) validateAllowance(allowance *taxHandlers.TaxAllowanc
 }
 
 func (m *middlewareHandler) findBaselineAmount(allowanceType string) (float64, float64, error) {
-	return m.taxHandler.FindBaseline(allowanceType)
+
+	return m.taxUsecase.FindBaseline(allowanceType)
 }
 
 func (m *middlewareHandler) validateDonationAllowance(amount, minAmount, maxAmount float64) error {

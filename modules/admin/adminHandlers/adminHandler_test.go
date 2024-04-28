@@ -63,13 +63,13 @@ type MockTaxUsecase struct {
 	mock.Mock
 }
 
-func (m *MockTaxUsecase) FindBaselineAllowance(req *tax.AllowanceFilter) (float64, float64, error) {
-	args := m.Called(req)
+func (m *MockTaxUsecase) FindBaseline(allowanceType string) (float64, float64, error) {
+	args := m.Called(allowanceType)
 	return args.Get(0).(float64), args.Get(1).(float64), args.Error(2)
 }
 
-func (m *MockTaxUsecase) FindTaxPercent(req *tax.TaxLevelFilter) (float64, error) {
-	args := m.Called(req)
+func (m *MockTaxUsecase) FindTaxPercent(totalIncome float64) (float64, error) {
+	args := m.Called(totalIncome)
 	return args.Get(0).(float64), args.Error(1)
 }
 

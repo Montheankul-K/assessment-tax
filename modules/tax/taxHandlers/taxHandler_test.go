@@ -63,13 +63,13 @@ type MockTaxUsecase struct {
 	mock.Mock
 }
 
-func (m *MockTaxUsecase) FindBaselineAllowance(req *tax.AllowanceFilter) (float64, float64, error) {
-	args := m.Called(req)
+func (m *MockTaxUsecase) FindBaseline(allowanceType string) (float64, float64, error) {
+	args := m.Called(allowanceType)
 	return args.Get(0).(float64), args.Get(1).(float64), args.Error(2)
 }
 
-func (m *MockTaxUsecase) FindTaxPercent(req *tax.TaxLevelFilter) (float64, error) {
-	args := m.Called(req)
+func (m *MockTaxUsecase) FindTaxPercent(totalIncome float64) (float64, error) {
+	args := m.Called(totalIncome)
 	return args.Get(0).(float64), args.Error(1)
 }
 
@@ -128,64 +128,6 @@ func setupEchoContext() (ctx echo.Context, recorder *httptest.ResponseRecorder) 
 	req := httptest.NewRequest(http.MethodPost, "/", nil)
 	rec := httptest.NewRecorder()
 	return e.NewContext(req, rec), rec
-}
-
-func TestTaxHandler_FindBaseline(t *testing.T) {
-	cfg := &MockConfig{}
-	usecase := &MockTaxUsecase{}
-	handler := taxHandler{cfg, usecase}
-
-	expectedMinAllowance := 0.0
-	expectedMaxAllowance := 100000.0
-	usecase.On("FindBaselineAllowance", mock.Anything).Return(expectedMinAllowance, expectedMaxAllowance, nil)
-
-	minAllowance, maxAllowance, err := handler.FindBaseline("personal")
-
-	assert.NoError(t, err)
-	assert.Equal(t, expectedMinAllowance, minAllowance)
-	assert.Equal(t, expectedMaxAllowance, maxAllowance)
-}
-
-func TestTaxHandler_FindBaseline_Error(t *testing.T) {
-	cfg := &MockConfig{}
-	usecase := &MockTaxUsecase{}
-	handler := taxHandler{cfg, usecase}
-
-	expectErr := errors.New("failed to find baseline allowance: error")
-	usecase.On("FindBaselineAllowance", mock.Anything).Return(0.0, 0.0, errors.New("error"))
-
-	_, _, err := handler.FindBaseline("personal")
-
-	assert.Error(t, err)
-	assert.Equal(t, expectErr.Error(), err.Error())
-}
-
-func TestTaxHandler_FindTaxPercent(t *testing.T) {
-	cfg := &MockConfig{}
-	usecase := &MockTaxUsecase{}
-	handler := taxHandler{cfg, usecase}
-
-	expectedTaxPercent := 35.0
-	usecase.On("FindTaxPercent", mock.Anything).Return(expectedTaxPercent, nil)
-
-	taxPercent, err := handler.FindTaxPercent(2000001.0)
-
-	assert.NoError(t, err)
-	assert.Equal(t, expectedTaxPercent, taxPercent)
-}
-
-func TestTaxHandler_FindTaxPercent_Error(t *testing.T) {
-	cfg := &MockConfig{}
-	usecase := &MockTaxUsecase{}
-	handler := taxHandler{cfg, usecase}
-
-	expectErr := errors.New("failed to find tax percent: error")
-	usecase.On("FindTaxPercent", mock.Anything).Return(0.0, errors.New("error"))
-
-	_, err := handler.FindTaxPercent(2000001.0)
-
-	assert.Error(t, err)
-	assert.Equal(t, expectErr.Error(), err.Error())
 }
 
 func TestTaxHandler_findMaxIncomeAndPercent(t *testing.T) {

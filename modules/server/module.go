@@ -34,9 +34,8 @@ func NewModule(router *echo.Echo, server *server, middleware middlewareHandlers.
 func NewMiddleware(s *server) middlewareHandlers.IMiddlewareHandler {
 	repository := taxRepositories.TaxRepository(s.db)
 	usecase := taxUsecases.TaxUsecase(repository)
-	handler := taxHandlers.TaxHandler(s.config, usecase)
 
-	return middlewareHandlers.MiddlewareHandler(s.config, handler)
+	return middlewareHandlers.MiddlewareHandler(s.config, usecase)
 }
 
 func (m *moduleFactory) basicAuthMiddleware(username, password string) echo.MiddlewareFunc {
