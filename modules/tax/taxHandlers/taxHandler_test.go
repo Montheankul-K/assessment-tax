@@ -135,7 +135,7 @@ func setupEchoContext() (ctx echo.Context, recorder *httptest.ResponseRecorder) 
 	return e.NewContext(req, rec), rec
 }
 
-func TestTaxHandler_CalculateTax(t *testing.T) {
+func TestTaxHandler_CalculateTax_WithRefund(t *testing.T) {
 	c, rec := setupEchoContext()
 	usecase := new(MockTaxUsecase)
 	handler := &taxHandler{
@@ -192,4 +192,59 @@ func TestTaxHandler_CalculateTax(t *testing.T) {
 	assert.Equal(t, expectResult.TaxLevel, responseData.TaxResponse.TaxLevel)
 	assert.Equal(t, expectResult.TotalTax, responseData.TaxResponse.TotalTax)
 	assert.Equal(t, expectResult.TaxRefund, responseData.TaxRefund)
+}
+
+func TestTaxHandler_CalculateTax_NoRefund(t *testing.T) {
+	c, rec := setupEchoContext()
+	usecase := new(MockTaxUsecase)
+	handler := &taxHandler{
+		taxUsecase: usecase,
+	}
+
+	req := &taxUsecases.CalculateTaxRequest{
+		TotalIncome: 500000.0,
+		Wht:         30000.0,
+		Allowances: []taxUsecases.TaxAllowanceDetails{
+			{AllowanceType: "donation", Amount: 10000.0},
+			{AllowanceType: "k-receipt", Amount: 20000.0},
+		},
+	}
+	c.Set("request", req)
+
+	taxWithoutWHT := 40000.0
+	usecase.On("CalculateTaxWithoutWHT", req).Return(taxWithoutWHT, nil).Once()
+	usecase.On("GetTaxLevelDetails", taxWithoutWHT).Return([]taxUsecases.TaxLevelResponse{
+		{Level: "0-150000", Tax: taxWithoutWHT},
+		{Level: "150001-500000", Tax: 0.0},
+		{Level: "500001-1000000", Tax: 0.0},
+		{Level: "1000001-2000000", Tax: 0.0},
+		{Level: "2000001 ขึ้นไป", Tax: 0.0},
+	}, nil).Once()
+	usecase.On("DecreaseWHT", taxWithoutWHT, req.Wht).Return(10000.0)
+
+	expectResult := taxUsecases.TaxResponse{
+		Tax: 40000.0,
+		TaxLevel: []taxUsecases.TaxLevelResponse{
+			{Level: "0-150000", Tax: taxWithoutWHT},
+			{Level: "150001-500000", Tax: 0.0},
+			{Level: "500001-1000000", Tax: 0.0},
+			{Level: "1000001-2000000", Tax: 0.0},
+			{Level: "2000001 ขึ้นไป", Tax: 0.0},
+		},
+		TotalTax: 10000.0,
+	}
+
+	err := handler.CalculateTax(c)
+	assert.NoError(t, err)
+	usecase.AssertExpectations(t)
+
+	assert.Equal(t, http.StatusOK, rec.Result().StatusCode)
+
+	var responseData taxUsecases.TaxResponseWithRefund
+	err = json.NewDecoder(rec.Result().Body).Decode(&responseData)
+	assert.NoError(t, err)
+
+	assert.Equal(t, expectResult.Tax, responseData.Tax)
+	assert.Equal(t, expectResult.TaxLevel, responseData.TaxLevel)
+	assert.Equal(t, expectResult.TotalTax, responseData.TotalTax)
 }

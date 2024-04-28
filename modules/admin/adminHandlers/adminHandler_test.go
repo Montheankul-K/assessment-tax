@@ -78,12 +78,52 @@ func (m *MockTaxUsecase) FindMaxIncomeAndPercent() (float64, float64, error) {
 	return args.Get(0).(float64), args.Get(1).(float64), args.Error(2)
 }
 
+func (m *MockTaxUsecase) CalculateTaxByTaxLevel(income float64) (float64, error) {
+	args := m.Called(income)
+	return args.Get(0).(float64), args.Error(1)
+}
+
 func (m *MockTaxUsecase) GetTaxLevel() ([]taxUsecases.EachTaxLevel, error) {
 	args := m.Called()
 	return args.Get(0).([]taxUsecases.EachTaxLevel), args.Error(1)
 }
 
 func (m *MockTaxUsecase) SetDeduction(req *tax.SetNewDeductionAmount) (float64, error) {
+	args := m.Called(req)
+	return args.Get(0).(float64), args.Error(1)
+}
+
+func (m *MockTaxUsecase) DecreasePersonalAllowance(totalIncome float64) (float64, error) {
+	args := m.Called(totalIncome)
+	return args.Get(0).(float64), args.Error(1)
+}
+
+func (m *MockTaxUsecase) DecreaseWHT(tax, wht float64) float64 {
+	args := m.Called(tax, wht)
+	return args.Get(0).(float64)
+}
+
+func (m *MockTaxUsecase) DecreaseAllowance(tax float64, allowances []taxUsecases.TaxAllowanceDetails) float64 {
+	args := m.Called(tax, allowances)
+	return args.Get(0).(float64)
+}
+
+func (m *MockTaxUsecase) ConstructTaxLevels(maxIncomeAmount float64, taxLevels []tax.TaxLevel) []taxUsecases.EachTaxLevel {
+	args := m.Called(maxIncomeAmount, taxLevels)
+	return args.Get(0).([]taxUsecases.EachTaxLevel)
+}
+
+func (m *MockTaxUsecase) SetValueToTaxLevel(taxLevels []taxUsecases.EachTaxLevel, tax float64) ([]taxUsecases.TaxLevelResponse, error) {
+	args := m.Called(taxLevels, tax)
+	return args.Get(0).([]taxUsecases.TaxLevelResponse), args.Error(1)
+}
+
+func (m *MockTaxUsecase) GetTaxLevelDetails(tax float64) ([]taxUsecases.TaxLevelResponse, error) {
+	args := m.Called(tax)
+	return args.Get(0).([]taxUsecases.TaxLevelResponse), args.Error(1)
+}
+
+func (m *MockTaxUsecase) CalculateTaxWithoutWHT(req *taxUsecases.CalculateTaxRequest) (float64, error) {
 	args := m.Called(req)
 	return args.Get(0).(float64), args.Error(1)
 }

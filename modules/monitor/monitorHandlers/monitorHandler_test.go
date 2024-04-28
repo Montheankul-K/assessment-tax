@@ -62,7 +62,7 @@ func setupEchoContext() (ctx echo.Context, recorder *httptest.ResponseRecorder) 
 	return e.NewContext(req, rec), rec
 }
 
-func TestHealthCheck(t *testing.T) {
+func TestMonitorHandler_HealthCheck(t *testing.T) {
 	handler := MonitorHandler(&MockConfig{})
 
 	c, rec := setupEchoContext()
