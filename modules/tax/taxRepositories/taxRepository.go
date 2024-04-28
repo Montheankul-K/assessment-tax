@@ -42,10 +42,10 @@ func (t *taxRepository) FindTaxPercentByIncome(req *tax.TaxLevelFilter) (float64
 	var taxLevel tax.TaxLevel
 	if result := t.db.Select("tax_percent").Where("min_income <= ? AND max_income >= ?", req.Income, req.Income).First(&taxLevel); result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return 0, fmt.Errorf("income for %s not found", req.Income)
+			return 0, fmt.Errorf("income for %.1f not found", req.Income)
 		}
 
-		return 0, fmt.Errorf("can't find income for %s", req.Income)
+		return 0, fmt.Errorf("can't find income for %.1f", req.Income)
 	}
 
 	return taxLevel.TaxPercent, nil
