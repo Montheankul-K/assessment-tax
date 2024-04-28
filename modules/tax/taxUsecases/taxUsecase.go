@@ -57,17 +57,7 @@ type EachTaxLevel struct {
 	Tax    float64
 }
 
-func (u *taxUsecase) GetTaxLevel() ([]EachTaxLevel, error) {
-	maxIncomeAmount, _, err := u.FindMaxIncomeAndPercent()
-	if err != nil {
-		return nil, err
-	}
-
-	taxLevels, err := u.taxRepository.GetTaxLevel()
-	if err != nil {
-		return nil, err
-	}
-
+func (u *taxUsecase) constructTaxLevels(maxIncomeAmount float64, taxLevels []tax.TaxLevel) []EachTaxLevel {
 	newTaxLevel := make([]EachTaxLevel, 0, len(taxLevels))
 	for _, level := range taxLevels {
 		var levelDesc string
@@ -84,7 +74,21 @@ func (u *taxUsecase) GetTaxLevel() ([]EachTaxLevel, error) {
 		})
 	}
 
-	return newTaxLevel, nil
+	return newTaxLevel
+}
+
+func (u *taxUsecase) GetTaxLevel() ([]EachTaxLevel, error) {
+	maxIncomeAmount, _, err := u.FindMaxIncomeAndPercent()
+	if err != nil {
+		return nil, err
+	}
+
+	taxLevels, err := u.taxRepository.GetTaxLevel()
+	if err != nil {
+		return nil, err
+	}
+
+	return u.constructTaxLevels(maxIncomeAmount, taxLevels), nil
 }
 
 func (u *taxUsecase) SetDeduction(req *tax.SetNewDeductionAmount) (float64, error) {

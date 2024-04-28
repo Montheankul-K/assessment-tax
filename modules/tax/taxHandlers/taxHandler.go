@@ -128,6 +128,7 @@ func (h *taxHandler) setValueToTaxLevel(taxLevels []taxUsecases.EachTaxLevel, ta
 				Level: level.Level,
 				Tax:   h.roundToOneDecimal(tax),
 			})
+			continue
 		}
 
 		result = append(result, TaxLevelResponse{
